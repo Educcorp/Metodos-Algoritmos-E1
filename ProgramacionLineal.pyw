@@ -45,6 +45,19 @@ class App(tk.Tk):
 
     # =========================================================================
     #   #VENTANA-01   __init__() — menú de métodos y datos del problema
+    #
+    #   Variables:
+    #     self.metodo   -> método elegido: 'simplex', 'gran_m' o 'dos_fases'
+    #     self.sentido  -> 'max' (maximizar) o 'min' (minimizar)
+    #     self.n        -> número de variables de decisión (x1 ... xn)
+    #     self.m        -> número de restricciones (R1 ... Rm)
+    #     menu          -> recuadro con las opciones del método
+    #     clave         -> nombre interno del método (el que usa motor.py)
+    #     nombre        -> texto que ve el usuario en el menú
+    #     conf          -> fila con Max/Min, variables, restricciones y "Crear tabla"
+    #     self.marco    -> recuadro donde van las casillas del problema
+    #     self.texto    -> área donde se muestran las iteraciones y el resultado
+    #     self.lienzos  -> tablas dibujadas con matplotlib (para poder borrarlas)
     # =========================================================================
     def __init__(self):
         super().__init__()
@@ -97,6 +110,19 @@ class App(tk.Tk):
 
     # =========================================================================
     #   #VENTANA-02   crear_casillas() — casillas de Z y de las restricciones
+    #
+    #   Variables:
+    #     n, m         -> número de variables y de restricciones elegidos
+    #     j            -> número de variable (x1, x2, ...)
+    #     i            -> número de restricción (R1, R2, ...)
+    #     fila         -> renglón de la ventana donde va la restricción i
+    #     self.c       -> casillas de los coeficientes de Z
+    #     self.a       -> casillas de los coeficientes de cada restricción
+    #     coefs        -> casillas de los coeficientes de UNA restricción
+    #     signo        -> signo elegido para la restricción ('<=', '>=' o '=')
+    #     self.signos  -> signos de todas las restricciones
+    #     self.b       -> casillas del lado derecho de cada restricción
+    #     casilla      -> una caja de texto donde se escribe un número
     # =========================================================================
     def crear_casillas(self):
         """Dibuja las casillas:   Z = [ ]x1 + [ ]x2   y   R1: [ ]x1 + [ ]x2 [<=] [ ]."""
@@ -134,6 +160,17 @@ class App(tk.Tk):
 
     # =========================================================================
     #   #VENTANA-03   resolver() — lee el problema y llama al motor
+    #
+    #   Variables:
+    #     c        -> coeficientes de Z ya convertidos a fracción
+    #     restr    -> restricciones: lista de (coeficientes, signo, lado derecho)
+    #     coefs    -> casillas de los coeficientes de una restricción
+    #     signo    -> signo de esa restricción
+    #     b        -> casilla del lado derecho de esa restricción
+    #     prob     -> problema completo que se manda a motor.resolver()
+    #     lienzo   -> una tabla dibujada antes (se borra al resolver de nuevo)
+    #     paso     -> cada cosa que devuelve el motor: un texto o una tabla (dict)
+    #     titulo   -> True si el texto es un título (se escribe en negritas)
     # =========================================================================
     def resolver(self):
         """Lee el problema de las casillas, lo resuelve con motor.py y muestra el texto."""
@@ -166,6 +203,23 @@ class App(tk.Tk):
 
     # =========================================================================
     #   #VENTANA-04   dibujar_tabla() — tabla simplex con matplotlib
+    #
+    #   Variables:
+    #     foto        -> datos de la tabla que manda el motor (foto_tabla)
+    #     encabezado  -> títulos de las columnas: Base, x1, x2, ..., LD, Cociente
+    #     celdas      -> valores de cada renglón (como texto)
+    #     renglon, q  -> un renglón y su cociente (se agrega al final)
+    #     anchos      -> ancho de cada columna según su texto más largo
+    #     fig         -> la figura de matplotlib
+    #     ax          -> el área de dibujo dentro de la figura
+    #     tabla       -> la tabla de matplotlib
+    #     col         -> columna de la variable que ENTRA (se pinta azul)
+    #     fila        -> renglón de la variable que SALE (se pinta naranja)
+    #     ultimo      -> renglón Z (o W), se pinta gris
+    #     r, c        -> renglón y columna de cada celda
+    #     celda       -> una celda de la tabla
+    #     lienzo      -> la figura convertida en un elemento de la ventana
+    #     widget      -> lo que se inserta dentro del área de resultados
     # =========================================================================
     def dibujar_tabla(self, foto):
         """Dibuja una tabla simplex con matplotlib y la inserta en el área de resultados."""

@@ -3,6 +3,15 @@
 #   #FRACCIONES
 #   Fracciones exactas (no float) para que los resultados salgan igual que
 #   en la libreta: 21/4 y no 5.2499999...
+#
+#   Variables:
+#     a, b   -> números enteros a los que se les saca el MCD
+#     x      -> número a convertir (entero o Fraccion)
+#     num    -> numerador de la fracción
+#     den    -> denominador de la fracción (siempre positivo)
+#     g      -> MCD de num y den (se usa para simplificar)
+#     self   -> la fracción actual
+#     o      -> la otra fracción con la que se opera o compara
 # =============================================================================
 
 def mcd(a, b):
@@ -64,6 +73,14 @@ class Fraccion:
 
 # =============================================================================
 #   #GRAN_M-04   class ExprM — cómo se representa y compara la M
+#
+#   Variables:
+#     m      -> coeficiente de M          (en 3M - 1/2, m = 3)
+#     c      -> constante, parte sin M    (en 3M - 1/2, c = -1/2)
+#     o      -> la otra expresión con la que se opera o compara
+#     k      -> fracción que multiplica a la expresión
+#     v      -> parte que decide el signo (m si no es 0; si no, c)
+#     texto  -> cómo se escribe la expresión en pantalla ("3M-1/2")
 # =============================================================================
 
 class ExprM:
@@ -122,6 +139,15 @@ class ExprM:
 
 # =============================================================================
 #   #LEER_NUMERO   leer_numero() — texto de una casilla a Fraccion
+#
+#   Variables:
+#     texto    -> lo que el usuario escribió en la casilla
+#     t        -> el texto sin espacios (se va recortando)
+#     a, b     -> numerador y denominador cuando se escribe una fracción "a/b"
+#     den      -> el denominador ya convertido a Fraccion
+#     signo    -> 1 si es positivo, -1 si es negativo
+#     entero   -> parte antes del punto   ("2.75" -> "2")
+#     decimal  -> parte después del punto ("2.75" -> "75")
 # =============================================================================
 
 def leer_numero(texto):
@@ -145,6 +171,17 @@ def leer_numero(texto):
 
 # =============================================================================
 #   #TABLA   class Tabla — cómo se guarda la tabla simplex
+#
+#   Variables:
+#     nombres   -> nombre de cada columna: x1, x2, s1, e2, a2...
+#     tipos     -> tipo de cada columna: 'x' decisión, 's' holgura,
+#                  'e' exceso, 'a' artificial
+#     filas     -> renglones de las restricciones (R1, R2, ...)
+#     z         -> renglón Z (o W en la Fase 1)
+#     base      -> columna de la variable básica de cada renglón
+#     sentido   -> 'max' (maximizar) o 'min' (minimizar)
+#     etiqueta  -> nombre del renglón objetivo: 'Z', o 'W' en la Fase 1
+#     LD        -> lado derecho; es la ÚLTIMA posición de cada renglón
 # =============================================================================
 
 class Tabla:
@@ -170,6 +207,16 @@ class Tabla:
 
 # =============================================================================
 #   #MOSTRAR   foto_tabla(), valores_actuales() — datos para la pantalla
+#
+#   Variables:
+#     t          -> la tabla simplex actual
+#     col        -> columna de la variable que ENTRA (None si no hay)
+#     fila       -> renglón de la variable que SALE (None si no hay)
+#     cocientes  -> textos de la prueba del cociente ("12 ÷ 3 = 4")
+#     b          -> columna de una variable básica
+#     f          -> un renglón de la tabla
+#     f[-1]      -> LD del renglón = valor de su variable básica
+#     basicas    -> texto con los valores, ej. "s1 = 4, x2 = 6"
 # =============================================================================
 
 def foto_tabla(t, col=None, fila=None, cocientes=None):
@@ -193,6 +240,25 @@ def valores_actuales(t):
 # =============================================================================
 #   #SIMPLEX-02   #GRAN_M-02   #DOS_FASES-02
 #   tabla_inicial() — FORMA ESTÁNDAR y tabla inicial
+#
+#   Variables:
+#     prob     -> problema capturado: {'sentido', 'c', 'restr'}
+#     salida   -> lista de textos y tablas que se muestran en pantalla
+#     c        -> coeficientes de la función objetivo Z
+#     total    -> número de columnas de la tabla (sin contar el LD)
+#     n        -> número de variables de decisión (x1 ... xn)
+#     i        -> número de restricción (i = 0 es R1, i = 1 es R2...)
+#     j        -> número de columna
+#     coefs    -> coeficientes de las x en la restricción
+#     signo    -> '<=', '>=' o '='
+#     ld       -> lado derecho de la restricción
+#     restr    -> restricciones ya corregidas (todas con ld >= 0)
+#     nombres  -> nombre de cada columna (x1, s1, e2, a2...)
+#     tipos    -> tipo de cada columna ('x', 's', 'e', 'a')
+#     fila     -> renglón que se está armando
+#     k        -> columna de la variable básica de ese renglón (s o a)
+#     filas    -> todos los renglones de la tabla inicial
+#     base     -> variable básica inicial de cada renglón
 # =============================================================================
 
 def renglon_z(c, total):
@@ -256,6 +322,17 @@ def tabla_inicial(prob, salida):
 # =============================================================================
 #   #GRAN_M-05   #DOS_FASES-04
 #   ajustar_renglon_z() — hacer 0 las variables básicas en el renglón Z (o W)
+#
+#   Variables:
+#     t           -> la tabla simplex
+#     salida      -> lista de textos y tablas que se muestran en pantalla
+#     i           -> número de renglón (R1, R2, ...)
+#     b           -> columna de la variable básica de ese renglón
+#     f           -> coeficiente de esa básica en el renglón Z (el que se hace 0)
+#     a           -> valor del renglón Z en una columna
+#     v           -> valor del renglón Ri en esa misma columna
+#     t.etiqueta  -> 'Z', o 'W' en la Fase 1
+#   Operación:  Z <- Z - f · Ri
 # =============================================================================
 
 def ajustar_renglon_z(t, salida):
@@ -275,6 +352,18 @@ def ajustar_renglon_z(t, salida):
 # =============================================================================
 #   #SIMPLEX-03   #GRAN_M-06   #DOS_FASES-05
 #   iterar() — CICLO DE ITERACIONES (lo usan los tres métodos)
+#
+#   Variables:
+#     t                   -> la tabla simplex
+#     salida              -> lista de textos y tablas que se muestran en pantalla
+#     max_iter            -> máximo de iteraciones (evita ciclos infinitos)
+#     it                  -> número de la iteración actual
+#     col                 -> columna de la variable que ENTRA
+#     fila                -> renglón de la variable que SALE
+#     cocientes           -> textos de la prueba del cociente
+#     t.z[col]            -> coeficiente de la que entra en el renglón Z
+#     t.filas[fila][col]  -> el PIVOTE
+#     estado devuelto     -> 'optimo', 'no_acotado' o 'limite'
 # =============================================================================
 
 def iterar(t, salida, max_iter=100):
@@ -316,6 +405,14 @@ def iterar(t, salida, max_iter=100):
 # =============================================================================
 #   #SIMPLEX-04   #GRAN_M-07   #DOS_FASES-06
 #   elegir_entrante() — variable que ENTRA a la base
+#
+#   Variables:
+#     t          -> la tabla simplex
+#     j          -> columna que se está revisando
+#     v          -> coeficiente de esa columna en el renglón Z
+#     mejor      -> columna elegida hasta ahora (la que entra); None si ninguna
+#     t.base     -> columnas de las variables básicas (esas no pueden entrar)
+#     t.sentido  -> 'max' busca el más negativo, 'min' el más positivo
 # =============================================================================
 
 def elegir_entrante(t):
@@ -340,6 +437,18 @@ def elegir_entrante(t):
 # =============================================================================
 #   #SIMPLEX-05   #GRAN_M-08   #DOS_FASES-07
 #   elegir_saliente() — variable que SALE (prueba del cociente mínimo)
+#
+#   Variables:
+#     t          -> la tabla simplex
+#     col        -> columna de la variable que ENTRA
+#     i          -> número de renglón
+#     fila       -> el renglón i
+#     a          -> coeficiente del renglón en la columna que entra (debe ser > 0)
+#     fila[-1]   -> LD (lado derecho) del renglón
+#     q          -> cociente  LD ÷ a
+#     mejor      -> renglón que SALE (el del menor cociente)
+#     menor      -> el menor cociente encontrado
+#     cocientes  -> texto de cada cociente para la tabla ("-" si a <= 0)
 # =============================================================================
 
 def elegir_saliente(t, col):
@@ -365,6 +474,18 @@ def elegir_saliente(t, col):
 # =============================================================================
 #   #SIMPLEX-06   #GRAN_M-09   #DOS_FASES-08
 #   pivotear() — operaciones de Gauss-Jordan
+#
+#   Variables:
+#     t    -> la tabla simplex
+#     r    -> renglón pivote (el de la variable que SALE)
+#     c    -> columna pivote (la de la variable que ENTRA)
+#     piv  -> el elemento PIVOTE = t.filas[r][c]
+#     v    -> cada valor del renglón pivote (se divide entre piv)
+#     i    -> cada uno de los otros renglones
+#     f    -> coeficiente que se quiere hacer 0 en la columna c
+#     a    -> valor del renglón que se modifica
+#     b    -> valor del renglón pivote en la misma columna
+#   Operación:  Ri <- Ri - f · Rr
 # =============================================================================
 
 def pivotear(t, r, c):
@@ -384,6 +505,18 @@ def pivotear(t, r, c):
 # =============================================================================
 #   #SIMPLEX-07   #GRAN_M-10   #DOS_FASES-12
 #   mostrar_resultado() — Z, variables, o aviso de que no hay solución
+#
+#   Variables:
+#     t             -> la tabla final
+#     estado        -> cómo terminó iterar(): 'optimo', 'no_acotado' o 'limite'
+#     salida        -> lista de textos y tablas que se muestran en pantalla
+#     artificiales  -> artificiales básicas con valor > 0 (no hay solución BF)
+#     b             -> columna de una variable básica
+#     f             -> su renglón;   f[-1] -> su valor (LD)
+#     t.z[-1]       -> valor de Z (último elemento del renglón Z)
+#     t.z[-1].m     -> parte en M de Z (si no es 0, quedó una artificial)
+#     valores       -> valor de cada básica por columna (las no básicas valen 0)
+#     j, nombre     -> columna y nombre de cada variable
 # =============================================================================
 
 def mostrar_resultado(t, estado, salida):
@@ -424,6 +557,13 @@ def mostrar_resultado(t, estado, salida):
 
 # =============================================================================
 #   #SIMPLEX-01   simplex() — FUNCIÓN PRINCIPAL DEL MÉTODO SIMPLEX
+#
+#   Variables:
+#     prob     -> problema capturado en la ventana
+#     salida   -> lista de textos y tablas que se muestran en pantalla
+#     t        -> la tabla simplex
+#     t.tipos  -> si contiene 'a' hay artificiales, así que el Simplex no aplica
+#     estado   -> cómo terminó iterar(): 'optimo', 'no_acotado' o 'limite'
 # =============================================================================
 
 def simplex(prob, salida):
@@ -441,15 +581,30 @@ def simplex(prob, salida):
 
 # =============================================================================
 #   #GRAN_M-01   gran_m() — FUNCIÓN PRINCIPAL DEL MÉTODO DE LA GRAN M
+#
+#   Variables:
+#     prob    -> problema capturado en la ventana
+#     salida  -> lista de textos y tablas que se muestran en pantalla
+#     t       -> la tabla simplex
+#     estado  -> cómo terminó iterar(): 'optimo', 'no_acotado' o 'limite'
 # =============================================================================
 
 def gran_m(prob, salida):
     """Gran M: las artificiales se penalizan con M en la función objetivo."""
     t = tabla_inicial(prob, salida)                         # -> #GRAN_M-02
 
-    # #GRAN_M-03  Penalización de las artificiales con M (ver ExprM en #GRAN_M-04):
-    #   Max: la artificial cuesta -M  ->  en el renglón Z aparece +M.
-    #   Min: la artificial cuesta +M  ->  en el renglón Z aparece -M.
+    # -------------------------------------------------------------------------
+    #   #GRAN_M-03   Penalización de las artificiales con M  (ver #GRAN_M-04)
+    #     Max: la artificial cuesta -M  ->  en el renglón Z aparece +M
+    #     Min: la artificial cuesta +M  ->  en el renglón Z aparece -M
+    #
+    #   Variables:
+    #     j             -> columna que se revisa
+    #     tipo          -> tipo de esa columna ('a' = artificial)
+    #     t.z[j]        -> coeficiente de la artificial en el renglón Z
+    #     ExprM(1, 0)   -> +M
+    #     ExprM(-1, 0)  -> -M
+    # -------------------------------------------------------------------------
     for j, tipo in enumerate(t.tipos):
         if tipo == "a":
             t.z[j] = ExprM(1 if t.sentido == "max" else -1, 0)
@@ -462,6 +617,15 @@ def gran_m(prob, salida):
 
 # =============================================================================
 #   #DOS_FASES-01   dos_fases() — FUNCIÓN PRINCIPAL DEL MÉTODO DE LAS DOS FASES
+#
+#   Variables:
+#     prob          -> problema capturado en la ventana
+#     salida        -> lista de textos y tablas que se muestran en pantalla
+#     t             -> la tabla simplex (la misma se usa en las dos fases)
+#     artificiales  -> columnas de las variables artificiales
+#     W             -> función de la Fase 1 = suma de las artificiales
+#     t.z           -> renglón W en la Fase 1, renglón Z en la Fase 2
+#     estado        -> cómo terminó iterar(): 'optimo', 'no_acotado' o 'limite'
 # =============================================================================
 
 def dos_fases(prob, salida):
@@ -471,8 +635,14 @@ def dos_fases(prob, salida):
 
     if artificiales:
         # ---------------------------------------------------------------------
-        # #DOS_FASES-03  FASE 1: Minimizar W = suma de las artificiales
-        #   Renglón W:  W - a1 - a2 - ... = 0   (coeficiente -1 en cada artificial)
+        #   #DOS_FASES-03   FASE 1: Minimizar W = suma de las artificiales
+        #     Renglón W:  W - a1 - a2 - ... = 0   (-1 en cada artificial)
+        #
+        #   Variables:
+        #     j             -> columna de la tabla
+        #     ExprM(0, -1)  -> el -1 que va en la columna de cada artificial
+        #     t.sentido     -> 'min', porque en la Fase 1 siempre se minimiza W
+        #     t.etiqueta    -> 'W', para que el renglón se muestre como W
         # ---------------------------------------------------------------------
         salida.append("=== FASE 1: Minimizar W = %s ==="
                       % " + ".join(t.nombres[j] for j in artificiales))
@@ -485,7 +655,12 @@ def dos_fases(prob, salida):
             return
 
         # ---------------------------------------------------------------------
-        # #DOS_FASES-09  Fin de la Fase 1: si W mínimo > 0 no hay solución BF
+        #   #DOS_FASES-09   Fin de la Fase 1: ¿se logró W = 0?
+        #     W = 0  ->  hay solución BF, se pasa a la Fase 2
+        #     W > 0  ->  no existe solución BF, el método termina
+        #
+        #   Variables:
+        #     t.z[-1].c  -> valor mínimo de W (LD del renglón W)
         # ---------------------------------------------------------------------
         if t.z[-1].c > 0:
             salida.append("\nRESULTADO\nEL PROBLEMA NO TIENE SOLUCIÓN FACTIBLE: el mínimo de "
@@ -496,7 +671,14 @@ def dos_fases(prob, salida):
         sacar_artificiales(t, salida)                       # -> #DOS_FASES-10
 
     # -------------------------------------------------------------------------
-    # #DOS_FASES-11  FASE 2: se regresa a la función objetivo original
+    #   #DOS_FASES-11   FASE 2: se regresa a la función objetivo original
+    #     Se cambia el renglón W por el renglón Z y se vuelve a iterar
+    #
+    #   Variables:
+    #     prob["c"]        -> coeficientes originales de Z
+    #     prob["sentido"]  -> 'max' o 'min' original del problema
+    #     t.z              -> se reemplaza el renglón W por el renglón Z
+    #     t.etiqueta       -> regresa a 'Z'
     # -------------------------------------------------------------------------
     salida.append("\n=== FASE 2: %s Z ===" % ("Maximizar" if prob["sentido"] == "max"
                                               else "Minimizar"))
@@ -509,6 +691,17 @@ def dos_fases(prob, salida):
 
 # =============================================================================
 #   #DOS_FASES-10   sacar_artificiales() — quitar las artificiales al terminar la Fase 1
+#
+#   Variables:
+#     t           -> la tabla al terminar la Fase 1
+#     salida      -> lista de textos y tablas que se muestran en pantalla
+#     i           -> renglón que se está revisando
+#     t.base[i]   -> columna de la variable básica de ese renglón
+#     reales      -> columnas NO artificiales con coeficiente != 0 en el renglón i
+#     reales[0]   -> la variable que entra en lugar de la artificial
+#     conservar   -> columnas que se quedan (todas menos las artificiales)
+#     b           -> columna de una básica (se renumera con conservar.index(b))
+#     f           -> un renglón;   f[-1] -> su LD
 # =============================================================================
 
 def sacar_artificiales(t, salida):
@@ -542,6 +735,15 @@ def sacar_artificiales(t, salida):
 
 # =============================================================================
 #   #RESOLVER   resolver() — punto de entrada que llama la ventana
+#
+#   Variables:
+#     METODOS          -> relaciona el nombre del método con su función
+#     metodo           -> 'simplex', 'gran_m' o 'dos_fases' (lo elige el menú)
+#     prob             -> problema capturado en la ventana:
+#       prob['sentido']  -> 'max' o 'min'
+#       prob['c']        -> coeficientes de Z
+#       prob['restr']    -> lista de (coeficientes, signo, lado derecho)
+#     salida           -> lista de pasos (textos y tablas) que se devuelve
 # =============================================================================
 
 METODOS = {"simplex": simplex,          # -> #SIMPLEX-01
