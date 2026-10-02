@@ -27,9 +27,9 @@ Uso:
 
 import tkinter as tk
 from tkinter import messagebox, scrolledtext
+from io import BytesIO
 
 from matplotlib.figure import Figure
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 import motor
 
@@ -57,7 +57,8 @@ class App(tk.Tk):
     #     conf          -> fila con Max/Min, variables, restricciones y "Crear tabla"
     #     self.marco    -> recuadro donde van las casillas del problema
     #     self.texto    -> área donde se muestran las iteraciones y el resultado
-    #     self.lienzos  -> tablas dibujadas con matplotlib (para poder borrarlas)
+    #     self.lienzos  -> imágenes de las tablas (se guardan para que no las borre
+    #                      el recolector de basura de Python)
     # =========================================================================
     def __init__(self):
         super().__init__()
@@ -98,7 +99,7 @@ class App(tk.Tk):
         self.texto = scrolledtext.ScrolledText(self, width=110, height=30, font=("Segoe UI", 10))
         self.texto.pack(fill="both", expand=True, padx=10, pady=(0, 10))
         self.texto.tag_configure("titulo", font=("Segoe UI", 11, "bold"))
-        self.lienzos = []                   # tablas dibujadas (para poder borrarlas)
+        self.lienzos = []                   # imágenes de las tablas (referencias vivas)
 
         self.crear_casillas()
 
@@ -168,7 +169,6 @@ class App(tk.Tk):
     #     signo    -> signo de esa restricción
     #     b        -> casilla del lado derecho de esa restricción
     #     prob     -> problema completo que se manda a motor.resolver()
-    #     lienzo   -> una tabla dibujada antes (se borra al resolver de nuevo)
     #     paso     -> cada cosa que devuelve el motor: un texto o una tabla (dict)
     #     titulo   -> True si el texto es un título (se escribe en negritas)
     # =========================================================================
@@ -184,11 +184,9 @@ class App(tk.Tk):
             return
         prob = {"sentido": self.sentido.get(), "c": c, "restr": restr}
 
-        # Borrar la solución anterior.
+        # Borrar la solución anterior (al borrar el texto también se borran sus imágenes).
         self.texto.config(state="normal")
         self.texto.delete("1.0", "end")
-        for lienzo in self.lienzos:
-            lienzo.get_tk_widget().destroy()
         self.lienzos = []
 
         # Aquí se ejecuta el método elegido (en motor.py: #RESOLVER).
@@ -218,11 +216,13 @@ class App(tk.Tk):
     #     ultimo      -> renglón Z (o W), se pinta gris
     #     r, c        -> renglón y columna de cada celda
     #     celda       -> una celda de la tabla
-    #     lienzo      -> la figura convertida en un elemento de la ventana
-    #     widget      -> lo que se inserta dentro del área de resultados
+    #     buffer      -> la figura ya dibujada, en memoria, como PNG
+    #     imagen      -> el PNG convertido a imagen de Tk (lo que se inserta)
     # =========================================================================
     def dibujar_tabla(self, foto):
-        """Dibuja una tabla simplex con matplotlib y la inserta en el área de resultados."""
+        """Dibuja una tabla simplex con matplotlib y la inserta como imagen (PNG) en el
+        área de resultados: así no queda un widget vivo que haya que redibujar en cada
+        scroll, que es lo que causaba el movimiento trabado."""
         encabezado = ["Base"] + foto["nombres"] + ["LD"]
         celdas = [[b] + v for b, v in zip(foto["base"], foto["valores"])]
         if foto["cocientes"]:
@@ -264,16 +264,13 @@ class App(tk.Tk):
             if c == 0 and r > 0:
                 celda.get_text().set_fontweight("bold")     # columna Base
 
-        # Insertar la figura dentro del área de texto.
-        lienzo = FigureCanvasTkAgg(fig, master=self.texto)
-        lienzo.draw()
-        widget = lienzo.get_tk_widget()
-        # Que la rueda del mouse siga desplazando el texto aunque esté sobre la tabla.
-        widget.bind("<MouseWheel>",
-                    lambda e: self.texto.yview_scroll(-3 * (e.delta // 120), "units"))
-        self.texto.window_create("end", window=widget)
+        # Convertir la figura a PNG e insertarla como imagen dentro del área de texto.
+        buffer = BytesIO()
+        fig.savefig(buffer, format="png")
+        imagen = tk.PhotoImage(data=buffer.getvalue())
+        self.texto.image_create("end", image=imagen)
         self.texto.insert("end", "\n")
-        self.lienzos.append(lienzo)
+        self.lienzos.append(imagen)             # referencia viva (si no, Tk la borra)
 
 
 if __name__ == "__main__":
