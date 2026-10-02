@@ -1,6 +1,4 @@
 
-
-
 # =============================================================================
 #   #FRACCIONES
 #   Fracciones exactas (no float) para que los resultados salgan igual que
