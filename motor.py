@@ -225,16 +225,21 @@ def foto_tabla(t, col=None, fila=None, cocientes=None):
     Se guarda una copia porque la tabla cambia al pivotear.
     col / fila: columna que entra y renglón que sale (para resaltarlos).
     """
-    return {"nombres": list(t.nombres),
+    return {"nombres": list(t.nombres),                        # columnas: x1, x2, s1, e2, a2...
             "base": [t.nombres[b] for b in t.base] + [t.etiqueta],
+            # "valores": cada renglón en texto; el último valor de cada uno es
+            # el LD (viene de fila[-1]/t.z[-1]), que la ventana dibuja en la
+            # columna "LD" de la tabla.
             "valores": [[str(v) for v in f] for f in t.filas] + [[str(v) for v in t.z]],
             "cocientes": cocientes, "col": col, "fila": fila}
 
 
 def valores_actuales(t):
     """Solución actual: las básicas valen su LD (las demás valen 0)."""
+    # Aquí se arma el texto "x1 = 4, x2 = 6": f[-1] es el LD de cada renglón,
+    # que es justo el valor de su variable básica t.nombres[b].
     basicas = ", ".join("%s = %s" % (t.nombres[b], f[-1]) for b, f in zip(t.base, t.filas))
-    return "%s   ->   %s = %s" % (basicas, t.etiqueta, t.z[-1])
+    return "%s   ->   %s = %s" % (basicas, t.etiqueta, t.z[-1])   # t.z[-1] = LD del renglón Z/W
 
 
 # =============================================================================
@@ -263,6 +268,8 @@ def valores_actuales(t):
 
 def renglon_z(c, total):
     """Renglón Z de la función objetivo:  Z - c1x1 - c2x2 - ... = 0  ->  [-c1, -c2, ..., 0]."""
+    # range(total + 1): las "total" columnas de la tabla + 1 más para el LD de Z,
+    # que arranca en 0 (ExprM() = 0) y va cambiando con cada pivoteo.
     return [ExprM(0, -c[j]) if j < len(c) else ExprM() for j in range(total + 1)]
 
 
@@ -287,7 +294,7 @@ def tabla_inicial(prob, salida):
         restr.append((coefs, signo, ld))
 
     # Nombres de las columnas.
-    nombres = ["x%d" % (j + 1) for j in range(n)]
+    nombres = ["x%d" % (j + 1) for j in range(n)]   # aquí se crean las columnas x1, x2, ..., xn
     tipos = ["x"] * n
     for i, (_, signo, _) in enumerate(restr):
         if signo == "<=":
@@ -304,6 +311,8 @@ def tabla_inicial(prob, salida):
     # Renglones:  [coeficientes de x, 0, ..., 0, LD]  + el 1 / -1 de s, e, a.
     filas, base = [], []
     for i, (coefs, signo, ld) in enumerate(restr):
+        # coefs ocupa las columnas x1..xn;  el LD (lado derecho) se agrega
+        # al final de la lista -> fila[-1] siempre es el LD de ese renglón.
         fila = list(coefs) + [Fraccion(0)] * (len(nombres) - n) + [ld]
         if signo == "<=":
             k = nombres.index("s%d" % (i + 1))
@@ -406,6 +415,11 @@ def iterar(t, salida, max_iter=100):
 #   #SIMPLEX-04   #GRAN_M-07   #DOS_FASES-06
 #   elegir_entrante() — variable que ENTRA a la base
 #
+#   Significado: el renglón Z (o W, en la Fase 1 de Dos Fases) indica cuánto
+#   cambia el objetivo por cada unidad que aumenta una variable no básica.
+#   Se elige la que más lo mejora: la más negativa al maximizar, la más
+#   positiva al minimizar. Si ninguna mejora el objetivo, la tabla es óptima.
+#
 #   Variables:
 #     t          -> la tabla simplex
 #     j          -> columna que se está revisando
@@ -437,6 +451,12 @@ def elegir_entrante(t):
 # =============================================================================
 #   #SIMPLEX-05   #GRAN_M-08   #DOS_FASES-07
 #   elegir_saliente() — variable que SALE (prueba del cociente mínimo)
+#
+#   Significado: cada variable básica se puede despejar como
+#   básica = LD - coef·(variable que entra); como ninguna básica puede
+#   quedar negativa, cada renglón pone un límite a cuánto puede crecer la
+#   variable que entra. El menor cociente es ese límite, y la variable
+#   básica de ese renglón es la que llega a 0 primero (la que sale).
 #
 #   Variables:
 #     t          -> la tabla simplex
@@ -475,6 +495,11 @@ def elegir_saliente(t, col):
 #   #SIMPLEX-06   #GRAN_M-09   #DOS_FASES-08
 #   pivotear() — operaciones de Gauss-Jordan
 #
+#   Significado: reescribe la tabla para que la columna de la variable que
+#   entra quede con un 1 en el renglón pivote y 0 en todos los demás
+#   renglones (incluido Z/W). Eso es justamente lo que hace básica a esa
+#   variable y saca de la base a la que estaba en el renglón pivote.
+#
 #   Variables:
 #     t    -> la tabla simplex
 #     r    -> renglón pivote (el de la variable que SALE)
@@ -490,6 +515,9 @@ def elegir_saliente(t, col):
 
 def pivotear(t, r, c):
     """Gauss-Jordan sobre el pivote (renglón r, columna c)."""
+    # El LD de cada renglón es su última posición (índice -1): como estas
+    # operaciones recorren la fila completa, el LD se actualiza aquí mismo
+    # junto con el resto de los coeficientes, sin ningún caso especial.
     piv = t.filas[r][c]
     t.filas[r] = [v / piv for v in t.filas[r]]             # 1. el pivote se hace 1
     for i in range(len(t.filas)):                           # 2. ceros en la columna
@@ -540,10 +568,13 @@ def mostrar_resultado(t, estado, salida):
                       "positivas (%s). No existe una solución básica factible (BF)."
                       % ", ".join(artificiales))
     else:
-        valores = {b: f[-1] for b, f in zip(t.base, t.filas)}      # no básicas = 0
+        # valores: para cada columna básica b, su valor es el LD (f[-1]) de su
+        # renglón; las columnas que no están en valores son no básicas y valen 0.
+        valores = {b: f[-1] for b, f in zip(t.base, t.filas)}
         salida.append("Z %s = %s" % ("máxima" if t.sentido == "max" else "mínima", t.z[-1].c))
         for j, nombre in enumerate(t.nombres):
             if t.tipos[j] != "a":
+                # Aquí se imprime el valor final de cada variable: "x1 = ...", "x2 = ...", etc.
                 salida.append("%s = %s" % (nombre, valores.get(j, 0)))
 
 
@@ -618,6 +649,14 @@ def gran_m(prob, salida):
 # =============================================================================
 #   #DOS_FASES-01   dos_fases() — FUNCIÓN PRINCIPAL DEL MÉTODO DE LAS DOS FASES
 #
+#   Estructura completa del método (cada parte remite a su bloque más abajo):
+#     Forma estándar -> #DOS_FASES-02 (tabla_inicial, reutilizada de Simplex/Gran M)
+#     FASE 1         -> #DOS_FASES-03 a #DOS_FASES-09   (4 pasos: ver más abajo)
+#     FASE 2         -> #DOS_FASES-10 a #DOS_FASES-12   (5 pasos: ver más abajo)
+#     Si no hay artificiales (todas las restricciones son <=), la Fase 1 se
+#     salta por completo: el origen ya es una solución BF y se va directo a
+#     optimizar Z (la Fase 2 funciona entonces como un Simplex normal).
+#
 #   Variables:
 #     prob          -> problema capturado en la ventana
 #     salida        -> lista de textos y tablas que se muestran en pantalla
@@ -635,8 +674,10 @@ def dos_fases(prob, salida):
 
     if artificiales:
         # ---------------------------------------------------------------------
-        #   #DOS_FASES-03   FASE 1: Minimizar W = suma de las artificiales
-        #     Renglón W:  W - a1 - a2 - ... = 0   (-1 en cada artificial)
+        #   #DOS_FASES-03   FASE 1 · Paso 1: Minimizar W = suma de las artificiales
+        #     Siempre se MINIMIZA W, sin importar si el problema original es
+        #     de máximo o de mínimo.  Renglón W:  W - a1 - a2 - ... = 0
+        #     (queda -1 en la columna de cada artificial).
         #
         #   Variables:
         #     j             -> columna de la tabla
@@ -649,15 +690,24 @@ def dos_fases(prob, salida):
         t.z = [ExprM(0, -1) if j in artificiales else ExprM()
                for j in range(len(t.nombres) + 1)]
         t.sentido, t.etiqueta = "min", "W"
-        ajustar_renglon_z(t, salida)                        # -> #DOS_FASES-04
-        if iterar(t, salida) != "optimo":                   # -> #DOS_FASES-05
+
+        # #DOS_FASES-04   FASE 1 · Paso 2: hacer 0 el coeficiente de las
+        # artificiales en el renglón W (son básicas, deben valer 0 ahí).
+        ajustar_renglon_z(t, salida)
+
+        # #DOS_FASES-05   FASE 1 · Paso 3: iterar minimizando W hasta que no
+        # quede ningún coeficiente positivo en el renglón W.
+        if iterar(t, salida) != "optimo":
             salida.append("No se pudo completar la Fase 1.")
             return
 
         # ---------------------------------------------------------------------
-        #   #DOS_FASES-09   Fin de la Fase 1: ¿se logró W = 0?
-        #     W = 0  ->  hay solución BF, se pasa a la Fase 2
-        #     W > 0  ->  no existe solución BF, el método termina
+        #   #DOS_FASES-09   FASE 1 · Paso 4: evaluar el resultado
+        #     W > 0  ->  no existe solución BF: el método termina aquí.
+        #     W = 0  ->  hay solución BF, se pasa a la Fase 2.
+        #     Caso especial (W = 0 con una artificial todavía básica en 0,
+        #     o un renglón redundante) lo resuelve sacar_artificiales(),
+        #     ya como primer paso de la Fase 2 (#DOS_FASES-10).
         #
         #   Variables:
         #     t.z[-1].c  -> valor mínimo de W (LD del renglón W)
@@ -668,29 +718,58 @@ def dos_fases(prob, salida):
                           "solución básica factible (BF)." % t.z[-1].c)
             return
         salida.append("W = 0: se obtuvo una solución básica factible.")
-        sacar_artificiales(t, salida)                       # -> #DOS_FASES-10
 
     # -------------------------------------------------------------------------
-    #   #DOS_FASES-11   FASE 2: se regresa a la función objetivo original
-    #     Se cambia el renglón W por el renglón Z y se vuelve a iterar
+    #   FASE 2: se abandona W y se optimiza la función objetivo original.
+    #     Paso 1 -> #DOS_FASES-10  Eliminar las columnas artificiales
+    #     Paso 2 -> #DOS_FASES-11  Poner el renglón Z original en vez de W
+    #     Paso 3 -> #DOS_FASES-04  Hacer 0 las básicas en el renglón Z
+    #     Paso 4 -> #DOS_FASES-05  Iterar con la regla del problema original
+    #     Paso 5    (no acotado, si no hay variable que pueda salir) ya lo
+    #               detecta iterar()/elegir_saliente() igual que en los
+    #               otros métodos.
+    # -------------------------------------------------------------------------
+    salida.append("\n=== FASE 2: %s Z ===" % ("Maximizar" if prob["sentido"] == "max"
+                                              else "Minimizar"))
+
+    # #DOS_FASES-10   FASE 2 · Paso 1: quitar las columnas de las artificiales
+    # de la última tabla de la Fase 1 (no aplica si nunca hubo artificiales).
+    if artificiales:
+        sacar_artificiales(t, salida)
+
+    # ---------------------------------------------------------------------
+    #   #DOS_FASES-11   FASE 2 · Paso 2: la fila r/W se reemplaza por el
+    #   renglón de la función objetivo original (coeficientes -cⱼ, LD 0).
     #
     #   Variables:
     #     prob["c"]        -> coeficientes originales de Z
     #     prob["sentido"]  -> 'max' o 'min' original del problema
     #     t.z              -> se reemplaza el renglón W por el renglón Z
     #     t.etiqueta       -> regresa a 'Z'
-    # -------------------------------------------------------------------------
-    salida.append("\n=== FASE 2: %s Z ===" % ("Maximizar" if prob["sentido"] == "max"
-                                              else "Minimizar"))
+    # ---------------------------------------------------------------------
     t.z = renglon_z(prob["c"], len(t.nombres))
     t.sentido, t.etiqueta = prob["sentido"], "Z"
-    ajustar_renglon_z(t, salida)                            # -> #DOS_FASES-04
-    estado = iterar(t, salida)                              # -> #DOS_FASES-05
+
+    # #DOS_FASES-04   FASE 2 · Paso 3: hacer 0 en el renglón Z los
+    # coeficientes de las variables que quedaron básicas al salir de la Fase 1.
+    ajustar_renglon_z(t, salida)
+
+    # #DOS_FASES-05   FASE 2 · Paso 4: iterar con la regla del problema
+    # original (máx o mín) hasta el óptimo, o hasta detectar no acotado.
+    estado = iterar(t, salida)
     mostrar_resultado(t, estado, salida)                    # -> #DOS_FASES-12
 
 
 # =============================================================================
-#   #DOS_FASES-10   sacar_artificiales() — quitar las artificiales al terminar la Fase 1
+#   #DOS_FASES-10   sacar_artificiales() — cierre de la Fase 1 + Paso 1 de la Fase 2
+#
+#   Hace dos cosas, una después de la otra:
+#     a) FASE 1 · Paso 4 (caso especial): si con W = 0 una artificial sigue
+#        básica (en valor 0), se saca pivoteando con una variable real de su
+#        mismo renglón; si ese renglón no tiene ninguna, la restricción es
+#        redundante y el renglón se elimina.
+#     b) FASE 2 · Paso 1: ya con todas las artificiales fuera de la base, se
+#        eliminan directamente sus columnas de la tabla.
 #
 #   Variables:
 #     t           -> la tabla al terminar la Fase 1
@@ -710,6 +789,7 @@ def sacar_artificiales(t, salida):
     Si una artificial sigue básica (con valor 0) se pivotea con una variable real
     de su renglón; si el renglón no tiene ninguna, la restricción es redundante.
     """
+    # a) Caso especial de la Fase 1: ninguna artificial debe quedar básica.
     i = 0
     while i < len(t.filas):
         if t.tipos[t.base[i]] == "a":
@@ -724,7 +804,8 @@ def sacar_artificiales(t, salida):
             pivotear(t, i, reales[0])
         i += 1
 
-    # Se eliminan las columnas artificiales (y se renumera la base).
+    # b) Paso 1 de la Fase 2: se eliminan las columnas artificiales (y se
+    # renumera la base, porque los índices de columna cambiaron).
     conservar = [j for j in range(len(t.nombres)) if t.tipos[j] != "a"]
     t.base = [conservar.index(b) for b in t.base]
     t.nombres = [t.nombres[j] for j in conservar]

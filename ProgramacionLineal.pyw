@@ -223,7 +223,12 @@ class App(tk.Tk):
         """Dibuja una tabla simplex con matplotlib y la inserta como imagen (PNG) en el
         área de resultados: así no queda un widget vivo que haya que redibujar en cada
         scroll, que es lo que causaba el movimiento trabado."""
+        # Encabezado: "Base", luego x1, x2, s1, e2, a2... (foto["nombres"], ya
+        # armados en motor.py) y al final la columna "LD".
         encabezado = ["Base"] + foto["nombres"] + ["LD"]
+        # Cada renglón de la tabla: nombre de la básica + sus valores; el
+        # último valor de cada lista (foto["valores"]) es siempre el LD,
+        # por eso queda alineado bajo la columna "LD" del encabezado.
         celdas = [[b] + v for b, v in zip(foto["base"], foto["valores"])]
         if foto["cocientes"]:
             encabezado.append("Cociente")
