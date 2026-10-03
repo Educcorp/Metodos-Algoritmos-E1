@@ -362,6 +362,13 @@ def ajustar_renglon_z(t, salida):
 #   #SIMPLEX-03   #GRAN_M-06   #DOS_FASES-05
 #   iterar() — CICLO DE ITERACIONES (lo usan los tres métodos)
 #
+#   Se llama una vez por cada método (Simplex, Gran M) y dos veces en Dos
+#   Fases (una por fase). Lo primero que hace SIEMPRE es mostrar la tabla
+#   inicial con la que va a trabajar esa llamada, antes de decidir nada: así
+#   queda visible la tabla de forma estándar ya lista (penalizada con M, o
+#   con el renglón W/Z recién armado, según el método) y no solo la primera
+#   iteración.
+#
 #   Variables:
 #     t                   -> la tabla simplex
 #     salida              -> lista de textos y tablas que se muestran en pantalla
@@ -378,10 +385,14 @@ def ajustar_renglon_z(t, salida):
 def iterar(t, salida, max_iter=100):
     """Repite hasta llegar al óptimo. Devuelve el estado final.
 
+        0. Mostrar la tabla inicial, tal cual queda antes de la primera decisión.
         1. ¿Hay variable que entre?  No -> la tabla es óptima.
         2. ¿Hay variable que salga?  No -> el problema es no acotado.
         3. Pivotear y repetir.
     """
+    salida.append("\nTabla inicial:")
+    salida.append(foto_tabla(t))
+
     it = 0
     while True:
         # 1. Variable que entra (si no hay, la tabla es óptima).
